@@ -3,7 +3,7 @@ import lzf
 # import pygit2
 from tokyocabinet import hash as tch
 
-import clickhouse_driver as clickhouse
+#import clickhouse_driver as clickhouse
 
 from datetime import datetime, timedelta, tzinfo
 import difflib
@@ -54,24 +54,31 @@ PATHS = {
     'commit_children': ('/da0_data/basemaps/c2ccFull{ver}.{key}.tch', 5),
     'commit_time_author': ('/da0_data/basemaps/c2taFull{ver}.{key}.tch', 5),
     'commit_root': ('/da0_data/basemaps/c2rFull{ver}.{key}.tch', 5),
+    'commit_reporoot': ('/da0_data/basemaps/c2PFull{ver}.{key}.tch', 5),
     'commit_parent': ('/da0_data/basemaps/c2pcFull{ver}.{key}.tch', 5),
     'author_commits': ('/da0_data/basemaps/a2cFull{ver}.{key}.tch', 5),
     'author_projects': ('/da0_data/basemaps/a2pFull{ver}.{key}.tch', 5),
     'author_files': ('/da0_data/basemaps/a2fFull{ver}.{key}.tch', 5),
+    'author_blobs': ('/da0_data/basemaps/a2fbFull{ver}.{key}.tch', 5),
     'project_authors': ('/da0_data/basemaps/p2aFull{ver}.{key}.tch', 5),
 
     'commit_head': ('/da0_data/basemaps/c2hFull{ver}.{key}.tch', 5),
     'commit_blobs': ('/da0_data/basemaps/c2bFull{ver}.{key}.tch', 5),
     'commit_files': ('/da0_data/basemaps/c2fFull{ver}.{key}.tch', 5),
     'project_commits': ('/da0_data/basemaps/p2cFull{ver}.{key}.tch', 5),
+    'project_commitroot': ('/da0_data/basemaps/P2cFull{ver}.{key}.tch', 5),
     'blob_commits': ('/da0_data/basemaps/b2cFull{ver}.{key}.tch', 5),
     'blob_authors': ('/da0_data/basemaps/b2aFull{ver}.{key}.tch', 5),
     'file_authors': ('/da0_data/basemaps/f2aFull{ver}.{key}.tch', 5),
     'file_commits': ('/da0_data/basemaps/f2cFull{ver}.{key}.tch', 5),
     'file_blobs': ('/da0_data/basemaps/f2bFull{ver}.{key}.tch', 5),
     'blob_files': ('/da0_data/basemaps/b2fFull{ver}.{key}.tch', 5),
+    'blob_tkns': ('/da0_data/basemaps/b2tkFull{ver}.{key}.tch', 5),
+	'commit_tdiff': ('/da0_data/basemaps/c2tdFull{ver}.{key}.tch', 5),
+    #'blob_parents': ('/fast/b2obFull{ver}.{key}.tch', 5),
 
     'author_trpath':('/da0_data/basemaps/a2trp{ver}.tch', 5),
+    'tkns_commits':('/da0_data/basemaps/t2cFull{ver}.{key}.tch', 5),
 
     # another way to get commit parents, currently unused
     # 'commit_parents': ('/da0_data/basemaps/c2pcK.{key}.tch', 7)
@@ -101,8 +108,9 @@ def read_env_var():
         'commit_parent', 'author_commits', 'author_projects', 'project_authors',
         'commit_head', 'commit_blobs', 'commit_files', 'project_commits', 'blob_commits',
         'blob_authors', 'file_commits', 'file_blobs', 'blob_files', 'author_trpath',
-        'author_files', 'file_authors'
-    ]    
+        'author_files', 'file_authors', 'author_blobs', 'commit_reporoot', 'blob_parents',
+		'blob_tkns', 'commit_tdiff'
+	]    
     all_sha1 = [
         'blob_index_line', 'tree_index_line', 'commit_index_line', 'tag_index_line'
     ]
@@ -611,7 +619,23 @@ class Blob(GitObject):
         **NOTE: commits removing this blob are not included**
         """
         return (Commit(bin_sha) for bin_sha in self.commit_shas)
+    
+    @cached_property
+    def author(self):
+        data = decomp(self.read_tch('blob_authors'))
+       # print(data)
+        return tuple(author for author in (data and data.split(";")))
+        #return self.read_tch('blob_authors')
 
+    @cached_property
+    def parents(self):
+        data = decomp(self.read_tch('blob_parents'))
+        return tuple(author for author in (data and data.split(";")))
+
+    @cached_property
+    def tkns(self):
+        data = decomp(self.read_tch('blob_tkns'))
+        return tuple(author for author in (data and data.split(";")))
 
 
 class Tree(GitObject):
@@ -1078,6 +1102,16 @@ class Commit(GitObject):
         data = decomp(self.read_tch('commit_files'))
         return tuple(file_name 
         for file_name in (data and data.split(";")) or [] if file_name and file_name != 'EMPTY')
+    @cached_property
+    def reporoot(self):
+        data = decomp(self.read_tch('commit_reporoot'))
+        return data
+
+    @cached_property
+    def tdiff(self):
+        data = decomp(self.read_tch('commit_tdiff'))
+        return data
+	    
 
 class Commit_info(GitObject):
     @cached_property
@@ -1333,7 +1367,9 @@ class Project(_Base):
         data = decomp(self.read_tch('project_authors'))
         return tuple(author_name 
         for author_name in (data and data.split(";")) or [] if author_name and author_name != 'EMPTY')
-
+    @cached_property
+    def rootcommit(self):
+        return slice20(self.read_tch('project_commitroot'))
 
 class File(_Base):
     """
@@ -1421,6 +1457,10 @@ class Author(_Base):
         super(Author, self).__init__(full_email)
 
     @cached_property
+    def blobs(self):
+        return slice20(self.read_tch('author_blobs')) 
+
+    @cached_property
     def commit_shas(self):
         """ SHA1 of all commits authored by the Author
 
@@ -1466,6 +1506,18 @@ A generator of all Commit objects authored by the Author
     def torvald(self):
       data = decomp(self.read_tch('author_trpath'))
       return tuple(path for path in (data and data.split(";")))
+
+class Tkns(_Base):
+    type = 'tkns'
+	
+    def __init__(self, hash):
+        self.hash = hash
+        super(Tkns, self).__init__(hash)
+
+    @cached_property
+    def commit_shas(self):
+        return slice20(self.read_tch('tkns_commmits'))
+	
 
 class Clickhouse_DB(object):
     ''' Clickhouse_DB class represents an instance of the clickhouse client
