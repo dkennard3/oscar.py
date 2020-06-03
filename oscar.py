@@ -38,6 +38,7 @@ PATHS = {
     # critical - random access to trees and commits on da4 - need to do offsets for the da3
     'commit_random': ('/da3_data/fast/All.sha1c/commit_{key}.tch', 7),
     'tree_random': ('/da3_data/fast/All.sha1c/tree_{key}.tch', 7),
+    'tree_commits': ('/da0_data/basemaps/t2cFull{ver}.{key}.tch', 5),
 
     'blob_offset': ('/da3_data/fast/All.sha1o/sha1.blob_{key}.tch', 7),
     'commit_offset': ('/da3_data/fast/All.sha1o/sha1.commit_{key}.tch', 7),
@@ -79,6 +80,8 @@ PATHS = {
 
     'author_trpath':('/da0_data/basemaps/a2trp{ver}.tch', 5),
     'tkns_commits':('/da0_data/basemaps/t2cFull{ver}.{key}.tch', 5),
+    'tdiff_commits':('/da0_data/basemaps/td2cFull{ver}.{key}.tch', 5),
+    'tdiff_files':('/da0_data/basemaps/td2fFull{ver}.{key}.tch', 5),
 
     # another way to get commit parents, currently unused
     # 'commit_parents': ('/da0_data/basemaps/c2pcK.{key}.tch', 7)
@@ -109,7 +112,8 @@ def read_env_var():
         'commit_head', 'commit_blobs', 'commit_files', 'project_commits', 'blob_commits',
         'blob_authors', 'file_commits', 'file_blobs', 'blob_files', 'author_trpath',
         'author_files', 'file_authors', 'author_blobs', 'commit_reporoot', 'blob_parents',
-		'blob_tkns', 'commit_tdiff'
+		'blob_tkns', 'commit_tdiff', 'tkns_commits', 'tdiff_commits', 'tree_commits',
+		'tdiff_files'
 	]    
     all_sha1 = [
         'blob_index_line', 'tree_index_line', 'commit_index_line', 'tag_index_line'
@@ -797,6 +801,9 @@ class Tree(GitObject):
         """
         return (Blob(sha) for sha in self.blob_shas)
 
+    @cached_property
+    def commits(self):
+        return slice20(self.read_tch('tree_commits'))
 
 class Commit(GitObject):
     """ A git commit object.
@@ -1516,8 +1523,20 @@ class Tkns(_Base):
 
     @cached_property
     def commit_shas(self):
-        return slice20(self.read_tch('tkns_commmits'))
-	
+        return slice20(self.read_tch('tkns_commits'))
+
+class Tdiff(_Base):
+    type = "tdiff"
+
+	#Not sure what to initialize this with.
+    def commit_shas(self):
+        return slice20(self.read_tch('tdiff_commits'))
+
+    def files(self):
+        data = decomp(self.read_tch('tdiff_files'))
+        return tuple(file for file in (data and data.split(";")))
+		
+
 
 class Clickhouse_DB(object):
     ''' Clickhouse_DB class represents an instance of the clickhouse client
