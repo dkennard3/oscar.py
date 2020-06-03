@@ -36,12 +36,12 @@ PATHS = {
     'blob_data': ('/da4_data/All.blobs/blob_{key}.bin', 7),
 
     # critical - random access to trees and commits on da4 - need to do offsets for the da3
-    'commit_random': ('/fast/All.sha1c/commit_{key}.tch', 7),
-    'tree_random': ('/fast/All.sha1c/tree_{key}.tch', 7),
+    'commit_random': ('/da3_data/fast/All.sha1c/commit_{key}.tch', 7),
+    'tree_random': ('/da3_data/fast/All.sha1c/tree_{key}.tch', 7),
 
-    'blob_offset': ('/fast/All.sha1o/sha1.blob_{key}.tch', 7),
-    'commit_offset': ('/fast/All.sha1o/sha1.commit_{key}.tch', 7),
-    'tree_offset': ('/fast/All.sha1o/sha1.tree_{key}.tch', 7),
+    'blob_offset': ('/da3_data/fast/All.sha1o/sha1.blob_{key}.tch', 7),
+    'commit_offset': ('/da3_data/fast/All.sha1o/sha1.commit_{key}.tch', 7),
+    'tree_offset': ('/da3_data/fast/All.sha1o/sha1.tree_{key}.tch', 7),
     # the rest of x_data is currently unused:
     # 'commit_data': ('/data/All.blobs/commit_{key}.bin',  # 7)
     # 'tree_data': ('/data/All.blobs/tree_{key}.bin', 7)
