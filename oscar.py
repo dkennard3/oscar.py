@@ -67,7 +67,7 @@ PATHS = {
     'commit_blobs': ('/da0_data/basemaps/c2bFull{ver}.{key}.tch', 5),
     'commit_files': ('/da0_data/basemaps/c2fFull{ver}.{key}.tch', 5),
     'project_commits': ('/da0_data/basemaps/p2cFull{ver}.{key}.tch', 5),
-    'project_commitroot': ('/da0_data/basemaps/P2cFull{ver}.{key}.tch', 5),
+    'project_commitforks': ('/da0_data/basemaps/P2cFull{ver}.{key}.tch', 5),
     'blob_commits': ('/da0_data/basemaps/b2cFull{ver}.{key}.tch', 5),
     'blob_authors': ('/da0_data/basemaps/b2aFull{ver}.{key}.tch', 5),
     'file_authors': ('/da0_data/basemaps/f2aFull{ver}.{key}.tch', 5),
@@ -75,7 +75,7 @@ PATHS = {
     'file_blobs': ('/da0_data/basemaps/f2bFull{ver}.{key}.tch', 5),
     'blob_files': ('/da0_data/basemaps/b2fFull{ver}.{key}.tch', 5),
     'blob_tkns': ('/da0_data/basemaps/b2tkFull{ver}.{key}.tch', 5),
-	'commit_tdiff': ('/da0_data/basemaps/c2tdFull{ver}.{key}.tch', 5),
+	'commit_tdiff': ('/da0_data/basemaps/c2tdFull{ver}.{key}.tch', 7),
     #'blob_parents': ('/fast/b2obFull{ver}.{key}.tch', 5),
 
     'author_trpath':('/da0_data/basemaps/a2trp{ver}.tch', 5),
@@ -113,7 +113,7 @@ def read_env_var():
         'blob_authors', 'file_commits', 'file_blobs', 'blob_files', 'author_trpath',
         'author_files', 'file_authors', 'author_blobs', 'commit_reporoot', 'blob_parents',
 		'blob_tkns', 'commit_tdiff', 'tkns_commits', 'tdiff_commits', 'tree_commits',
-		'tdiff_files'
+		'tdiff_files', 'project_commitroot'
 	]    
     all_sha1 = [
         'blob_index_line', 'tree_index_line', 'commit_index_line', 'tag_index_line'
@@ -638,8 +638,9 @@ class Blob(GitObject):
 
     @cached_property
     def tkns(self):
-        data = decomp(self.read_tch('blob_tkns'))
-        return tuple(author for author in (data and data.split(";")))
+        data = self.read_tch('blob_tkns')
+        #return tuple(author for author in (data and data.split(";")))
+        return data
 
 
 class Tree(GitObject):
@@ -1116,7 +1117,7 @@ class Commit(GitObject):
 
     @cached_property
     def tdiff(self):
-        data = decomp(self.read_tch('commit_tdiff'))
+        data = slice20(self.read_tch('commit_tdiff'))
         return data
 	    
 
@@ -1375,8 +1376,8 @@ class Project(_Base):
         return tuple(author_name 
         for author_name in (data and data.split(";")) or [] if author_name and author_name != 'EMPTY')
     @cached_property
-    def rootcommit(self):
-        return slice20(self.read_tch('project_commitroot'))
+    def fork_commits(self):
+        return slice20(self.read_tch('project_commitforks'))
 
 class File(_Base):
     """
