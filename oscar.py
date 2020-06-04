@@ -79,8 +79,8 @@ PATHS = {
     #'blob_parents': ('/fast/b2obFull{ver}.{key}.tch', 5),
 
     'author_trpath':('/da0_data/basemaps/a2trp{ver}.tch', 5),
-    'tdiff_commits':('/da0_data/basemaps/td2cFull{ver}.{key}.tch', 5),
-    'tdiff_files':('/da0_data/basemaps/td2fFull{ver}.{key}.tch', 5),
+    'tdiff_commit':('/da0_data/basemaps/td2cFull{ver}.{key}.tch', 5),
+    'tdiff_file':('/da0_data/basemaps/td2fFull{ver}.{key}.tch', 5),
 
     # another way to get commit parents, currently unused
     # 'commit_parents': ('/da0_data/basemaps/c2pcK.{key}.tch', 7)
@@ -1519,26 +1519,22 @@ class Tkns(GitObject):
     No relationships exist from tkns just yet.
     '''
     type = 'tkns'
-	
-    def __init__(self, hash):
-        self.hash = hash
-        super(Tkns, self).__init__(hash)
 
 class Tdiff(GitObject):
     type = 'tdiff'
 
-    def __init__(self, hash):
-        self.hash = hash
-        super(Tdiff, self).__init__(hash)
+    '''
+    Tdiff is the result of diff that is run on 2 blobs (old and new)
+	representing the same filename in a commit.
+    '''
 
     @cached_property
-    def commit_shas(self):
-        return slice20(self.read_tch('tdiff_commits'))
+    def commit(self):
+        return slice20(self.read_tch('tdiff_commit'))
 
     @cached_property
-    def files(self):
-        return self.read_tch('tdiff_files')
-        #return tuple(file for file in (data and data.split(";")))
+    def file(self):
+        return self.read_tch('tdiff_file')
 		
 
 
