@@ -79,7 +79,6 @@ PATHS = {
     #'blob_parents': ('/fast/b2obFull{ver}.{key}.tch', 5),
 
     'author_trpath':('/da0_data/basemaps/a2trp{ver}.tch', 5),
-    'tkns_commits':('/da0_data/basemaps/t2cFull{ver}.{key}.tch', 5),
     'tdiff_commits':('/da0_data/basemaps/td2cFull{ver}.{key}.tch', 5),
     'tdiff_files':('/da0_data/basemaps/td2fFull{ver}.{key}.tch', 5),
 
@@ -624,12 +623,11 @@ class Blob(GitObject):
         """
         return (Commit(bin_sha) for bin_sha in self.commit_shas)
     
-    @cached_property
+    @property
     def author(self):
-        data = decomp(self.read_tch('blob_authors'))
-       # print(data)
-        return tuple(author for author in (data and data.split(";")))
-        #return self.read_tch('blob_authors')
+        data = self.read_tch('blob_authors')
+        return data
+        #return tuple(author for author in (data and data.split(";")))
 
     @cached_property
     def parents(self):
@@ -638,9 +636,10 @@ class Blob(GitObject):
 
     @cached_property
     def tkns(self):
-        data = self.read_tch('blob_tkns')
-        #return tuple(author for author in (data and data.split(";")))
-        return data
+        """
+		NOTE: not all blobs have had ctags run on them. May return empty tuple "()".
+		"""
+        return self.read_tch('blob_tkns')
 
 
 class Tree(GitObject):
@@ -1515,27 +1514,31 @@ A generator of all Commit objects authored by the Author
       data = decomp(self.read_tch('author_trpath'))
       return tuple(path for path in (data and data.split(";")))
 
-class Tkns(_Base):
+class Tkns(GitObject):
+    '''
+    No relationships exist from tkns just yet.
+    '''
     type = 'tkns'
 	
     def __init__(self, hash):
         self.hash = hash
         super(Tkns, self).__init__(hash)
 
+class Tdiff(GitObject):
+    type = 'tdiff'
+
+    def __init__(self, hash):
+        self.hash = hash
+        super(Tdiff, self).__init__(hash)
+
     @cached_property
-    def commit_shas(self):
-        return slice20(self.read_tch('tkns_commits'))
-
-class Tdiff(_Base):
-    type = "tdiff"
-
-	#Not sure what to initialize this with.
     def commit_shas(self):
         return slice20(self.read_tch('tdiff_commits'))
 
+    @cached_property
     def files(self):
-        data = decomp(self.read_tch('tdiff_files'))
-        return tuple(file for file in (data and data.split(";")))
+        return self.read_tch('tdiff_files')
+        #return tuple(file for file in (data and data.split(";")))
 		
 
 
