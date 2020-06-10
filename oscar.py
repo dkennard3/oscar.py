@@ -111,7 +111,7 @@ def read_env_var():
         'commit_head', 'commit_blobs', 'commit_files', 'project_commits', 'blob_commits',
         'blob_authors', 'file_commits', 'file_blobs', 'blob_files', 'author_trpath',
         'author_files', 'file_authors', 'author_blobs', 'commit_reporoot', 'blob_parents',
-		'blob_tkns', 'commit_tdiff', 'tkns_commits', 'tdiff_commits', 'tree_commits',
+		'blob_tkns', 'commit_tdiff', 'tdiff_commits', 'tree_commits',
 		'tdiff_files', 'project_commitroot'
 	]    
     all_sha1 = [
@@ -359,14 +359,14 @@ def read_tch(path, key, silent=False):
     """
 
     try:
+        #print("path = {}\nkey = {}".format(path, key))
         return _get_tch(path)[key]
-    except:
-      return None
+    except KeyError:
+        #return None
+        raise ObjectNotFound(path + " " + key)
         #raise IOError("Tokyocabinet file " + path + " not found")
-    #except KeyError:
      #   if silent:
      #       return ''
-     #   raise ObjectNotFound(path + " " + key)
 
 def tch_keys(path, key_prefix=''):
     return _get_tch(path).fwmkeys(key_prefix)
@@ -379,6 +379,9 @@ def resolve_path(dtype, object_key, use_fnv=False):
 
     p = fnvhash.fnv1a_32(object_key) if use_fnv else ord(object_key[0])
     prefix = p & (2**prefix_length - 1)
+    #print("p = {}".format(p))
+    #print("prefix = {}".format(prefix))
+    #print(path.format(key=prefix))
     return path.format(key=prefix)
 
 
@@ -622,10 +625,11 @@ class Blob(GitObject):
         **NOTE: commits removing this blob are not included**
         """
         return (Commit(bin_sha) for bin_sha in self.commit_shas)
-    
+   
     @property
     def author(self):
-        data = self.read_tch('blob_authors')
+		#currently nonfunctional, needs resolved
+        data = decomp(self.read_tch('blob_authors'))
         return data
         #return tuple(author for author in (data and data.split(";")))
 
@@ -1396,6 +1400,11 @@ class File(_Base):
     def authors(self):
         data = decomp(self.read_tch('file_authors'))
         return tuple(author for author in (data and data.split(";")))
+
+    @cached_property
+    def blobs(self):
+        data = slice20(self.read_tch('file_blobs'))
+        return data
 
     @cached_property
     def commit_shas(self):
