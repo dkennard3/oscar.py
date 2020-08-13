@@ -69,14 +69,15 @@ PATHS = {
     'project_commits': ('/da0_data/basemaps/p2cFull{ver}.{key}.tch', 5),
     'project_commitforks': ('/da0_data/basemaps/P2cFull{ver}.{key}.tch', 5),
     'blob_commits': ('/da0_data/basemaps/b2cFull{ver}.{key}.tch', 5),
-    'blob_authors': ('/da0_data/basemaps/b2aFull{ver}.{key}.tch', 5),
+    'blob_author': ('/da0_data/basemaps/b2aFull{ver}.{key}.tch', 5),
     'file_authors': ('/da0_data/basemaps/f2aFull{ver}.{key}.tch', 5),
     'file_commits': ('/da0_data/basemaps/f2cFull{ver}.{key}.tch', 5),
     'file_blobs': ('/da0_data/basemaps/f2bFull{ver}.{key}.tch', 5),
     'blob_files': ('/da0_data/basemaps/b2fFull{ver}.{key}.tch', 5),
     'blob_tkns': ('/da0_data/basemaps/b2tkFull{ver}.{key}.tch', 5),
+    'blob_blobs': ('/da0_data/basemaps/b2obFull{ver}.{key}.tch', 5),
 	'commit_tdiff': ('/da0_data/basemaps/c2tdFull{ver}.{key}.tch', 7),
-    #'blob_parents': ('/fast/b2obFull{ver}.{key}.tch', 5),
+    'blob_parent': ('/da0_data/basemaps/b2obFull{ver}.{key}.tch', 5),
 
     'author_trpath':('/da0_data/basemaps/a2trp{ver}.tch', 5),
     'tdiff_commit':('/da0_data/basemaps/td2cFull{ver}.{key}.tch', 5),
@@ -628,23 +629,28 @@ class Blob(GitObject):
    
     @property
     def author(self):
-		#currently nonfunctional, needs resolved
-        data = decomp(self.read_tch('blob_authors'))
-        return data
-        #return tuple(author for author in (data and data.split(";")))
+        data = self.read_tch('blob_author')
+        return tuple(author for author in (data and data.split(";")))
 
     @cached_property
-    def parents(self):
-        data = decomp(self.read_tch('blob_parents'))
-        return tuple(author for author in (data and data.split(";")))
+    def parent(self):
+        return slice20(self.read_tch('blob_parent'))
 
     @cached_property
     def tkns(self):
         """
-		NOTE: not all blobs have had ctags run on them. May return empty tuple "()".
+		NOTE: Not all blobs have had ctags run on them. May return empty tuple "()".
 		"""
-        return self.read_tch('blob_tkns')
+        data = self.read_tch('blob_tkns')
+        if not data:
+            return "No ctags were made for this blob"
+        else:
+            return self.read_tch('blob_tkns')
 
+    @cached_property
+    def old_blobs(self):
+        data = slice20(self.read_tch('blob_blobs'))
+        return data;
 
 class Tree(GitObject):
     """ A representation of git tree object, basically - a directory.
